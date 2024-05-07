@@ -1,8 +1,8 @@
 
-import lib.archive as archive
-import lib.scraper as scraper
+from lib.archive import dump_links
+from lib.scraper import scrape_comics
 from lib.dudes import battle
 
-archive.dump_links()
-scraper.scraper()
+dump_links()
+scrape_comics()
 battle()

@@ -1,28 +1,29 @@
-from bs4 import BeautifulSoup as bs
 import json
 import regex as re
+import requests as rq
 
-def extract_rel(link):
-    with open(link, verify=False) as fp:
-        soup = bs(fp)
+def get_links():
+    with open('./data/links.json', 'r') as f:
+        return json.load(f)
 
-    date = re.search(r"\d{4}/\d{2}/\d{2}", link).group()
-    comic = soup.find("img", class_="comicImage")
-    return comic, date
+def get_date(url):
+    return re.search(r'\d{4}/\d{2}/\d{2}', url).group()
 
-def dump_to_html(comic, date):
-    output_filename = f"./comics/{date.text}.html"
-    with open(output_filename, "w") as fp:
-        fp.write("<!DOCTYPE html>\n", comic.prettify(), date.prettify())
-        fp.close()
+def get_comic(date):
+    date = re.sub(r'(\d{4})/(\d{2})/(\d{2})', r'\2\3\1', date)
+    url = f"https://achewood.com/assets/img/{date}.png"
+    try:
+        response = rq.get(url, timeout=1.5)
+        file_date = re.sub(r'(\d{2})(\d{2})(\d{4})', r'\3\1\2', date)
+        with open(f'./comics/{file_date}.png', 'wb') as f:
+            f.write(response.content)
+        print(f"Scraped {date}")
 
-def scraper():
-    with open("./data/links.json") as fp:
-        archive = json.load(fp)
+    except rq.exceptions.ConnectionError:
+        print("Failed to establish a connection. Please check your network.")
 
-    for link in archive:
-        comic, date = extract_rel(link)
-        dump_to_html(comic, date)
-        print(f"Extracted comic to comics/`{date.text}`.")
-
-    print(f"Extracted {len(archive)} comics.")
+def scrape_comics():
+    links = get_links()
+    for link in links:
+        date = get_date(link)
+        get_comic(date)
